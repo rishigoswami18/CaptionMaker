@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
-const API_BASE = 'http://localhost:8081/api/jobs';
+const API_BASE = '/api/jobs';
 
 const SECTIONS = [
   { key: 'reelCaption', label: 'Reel Caption', emoji: '🎬' },
