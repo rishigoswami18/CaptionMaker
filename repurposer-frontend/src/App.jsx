@@ -15,6 +15,81 @@ const SECTIONS = [
 const EXAMPLE_TRANSCRIPT =
   "In this video I explain three tips for beating procrastination: start with a 2-minute version of the task, remove your phone from the room, and reward yourself after finishing.";
 
+const APP_URL = 'https://captionmaker-uxz2.onrender.com/';
+
+function getScoreTone(score) {
+  return score >= 8 ? 'high' : score >= 5 ? 'mid' : 'low';
+}
+
+function wrapCanvasText(context, text, maxWidth) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let line = '';
+
+  words.forEach((word) => {
+    const nextLine = line ? `${line} ${word}` : word;
+    if (context.measureText(nextLine).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = nextLine;
+    }
+  });
+
+  if (line) lines.push(line);
+  return lines;
+}
+
+async function createShareCard(job) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 900;
+  const context = canvas.getContext('2d');
+
+  const background = context.createLinearGradient(0, 0, 1200, 900);
+  background.addColorStop(0, '#fff1f7');
+  background.addColorStop(1, '#fff0df');
+  context.fillStyle = background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.fillStyle = '#ffffff';
+  context.roundRect(72, 72, 1056, 756, 40);
+  context.fill();
+
+  context.fillStyle = '#c94f80';
+  context.font = '700 34px Quicksand, sans-serif';
+  context.fillText('REPURPOSE', 132, 154);
+
+  context.fillStyle = '#3a2e4d';
+  context.font = '700 62px Baloo 2, sans-serif';
+  context.fillText('Hook Strength', 132, 250);
+
+  context.fillStyle = job.hookScore >= 8 ? '#dff7ec' : job.hookScore >= 5 ? '#fff3d6' : '#ffe3e3';
+  context.roundRect(132, 292, 300, 112, 28);
+  context.fill();
+  context.fillStyle = job.hookScore >= 8 ? '#1e9e6b' : job.hookScore >= 5 ? '#b8860b' : '#d14343';
+  context.font = '700 58px Baloo 2, sans-serif';
+  context.fillText(`${job.hookScore}/10`, 178, 368);
+
+  context.fillStyle = '#6b5d80';
+  context.font = '500 28px Quicksand, sans-serif';
+  context.fillText('A scroll-stopping score for your next post', 132, 470);
+
+  context.fillStyle = '#3a2e4d';
+  context.font = '600 34px Quicksand, sans-serif';
+  const captionLines = wrapCanvasText(context, `“${job.reelCaption || ''}”`, 880).slice(0, 3);
+  captionLines.forEach((line, index) => context.fillText(line, 132, 548 + index * 48));
+
+  context.fillStyle = '#8a7c9e';
+  context.font = '500 24px Quicksand, sans-serif';
+  context.fillText('See what your hook can do', 132, 738);
+  context.fillStyle = '#c94f80';
+  context.font = '600 24px Quicksand, sans-serif';
+  context.fillText(APP_URL.replace('https://', ''), 132, 780);
+
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
 function Mascot() {
   return (
     <svg width="88" height="88" viewBox="0 0 120 120" fill="none">
@@ -44,6 +119,7 @@ function App() {
   const [regeneratingKey, setRegeneratingKey] = useState(null);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [shareStatus, setShareStatus] = useState('');
 
   useEffect(() => {
     fetchHistory();
@@ -75,6 +151,38 @@ function App() {
     navigator.clipboard.writeText(text || '');
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 1500);
+  };
+
+  const handleShareScore = async () => {
+    if (!job?.hookScore || !job.reelCaption) return;
+
+    try {
+      const imageBlob = await createShareCard(job);
+      const imageFile = new File([imageBlob], 'repurpose-hook-score.png', { type: 'image/png' });
+      const shareText = `My hook scored ${job.hookScore}/10 ✨\n\n“${job.reelCaption}”\n\nScore yours with Repurpose: ${APP_URL}`;
+
+      if (navigator.share && navigator.canShare?.({ files: [imageFile] })) {
+        await navigator.share({
+          title: `My hook scored ${job.hookScore}/10`,
+          text: shareText,
+          files: [imageFile],
+        });
+        setShareStatus('Shared!');
+      } else {
+        const downloadUrl = URL.createObjectURL(imageBlob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = 'repurpose-hook-score.png';
+        link.click();
+        URL.revokeObjectURL(downloadUrl);
+        await navigator.clipboard.writeText(shareText);
+        setShareStatus('Card downloaded + text copied');
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') setShareStatus('Could not share right now');
+    }
+
+    setTimeout(() => setShareStatus(''), 2800);
   };
 
   const handleRegenerate = async (key) => {
@@ -169,14 +277,16 @@ function App() {
 
                 {key === 'reelCaption' && job.hookScore != null && (
                   <div className="hook-score">
-                    <span
-                      className={`hook-badge score-${
-                        job.hookScore >= 8 ? 'high' : job.hookScore >= 5 ? 'mid' : 'low'
-                      }`}
-                    >
-                      Hook Strength: {job.hookScore}/10
-                    </span>
+                    <div className="hook-score-row">
+                      <span className={`hook-badge score-${getScoreTone(job.hookScore)}`}>
+                        Hook Strength: {job.hookScore}/10
+                      </span>
+                      <button className="share-score-btn" onClick={handleShareScore} title="Share your hook score">
+                        <span aria-hidden="true">↗</span> Share score
+                      </button>
+                    </div>
                     <p className="hook-feedback">{job.hookFeedback}</p>
+                    {shareStatus && <p className="share-status" role="status">{shareStatus}</p>}
                   </div>
                 )}
               </div>

@@ -250,6 +250,13 @@ textarea, input, button {
   border-top: 1px dashed #F0E8FF;
 }
 
+.hook-score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .hook-badge {
   display: inline-block;
   font-family: 'Baloo 2', sans-serif;
@@ -257,7 +264,22 @@ textarea, input, button {
   font-size: 13px;
   padding: 5px 12px;
   border-radius: 12px;
-  margin-bottom: 6px;
+}
+
+.share-score-btn {
+  border: 1px solid #ffc0d6;
+  background: #fff;
+  color: #c94f80;
+  border-radius: 12px;
+  padding: 5px 11px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.share-score-btn:hover {
+  background: #fff0f5;
 }
 
 .score-high {
@@ -280,4 +302,39 @@ textarea, input, button {
   color: #6B5D80;
   margin: 4px 0 0;
   line-height: 1.5;
+}
+
+.share-status {
+  color: #1e9e6b;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 8px 0 0;
+}
+
+@media (max-width: 560px) {
+  .page {
+    padding: 24px 12px;
+  }
+
+  .card {
+    padding: 28px 18px;
+    border-radius: 22px;
+  }
+
+  .header h1 {
+    font-size: 36px;
+  }
+
+  .result-card {
+    padding: 16px;
+  }
+
+  .result-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .result-actions {
+    flex-shrink: 0;
+  }
 }
